@@ -10,14 +10,45 @@
 <body>
 	<div id="container">
 		<h1>Simplex</h1>
+		<button onclick="save()">Permalink</button><button onclick="load()">Load</button>
 		<h2>Code</h2>
-		<div id="wrap"><textarea id="code"></textarea></div>
+		<div class="wrap"><textarea id="code"></textarea></div>
 		<button id="submit">Run</button>
 		<button id="full">Run with timeout</button>
+		<h3>Input (not working)</h3>
+		<div class="wrap"><textarea id="input"></textarea></div>
 		<h2>Output</h2>
 		<div id="output" class="mono"></div>
 	</div>
 	<script>
+	// from tryitonline.net
+	function load(){
+		if(location.hash){
+			var hash = location.hash.slice(1).split("&").map(function(r){
+				r=r.split("=");
+				if(r[0]=="code") document.getElementById("code").value = decode(r[1]);
+				if(r[0]=="input") document.getElementById("input").value = decode(r[1]);
+			});
+		}
+	}
+
+	function save(){
+		var a = document.getElementById("code").value;
+		var b = document.getElementById("input").value;
+		location.hash = "#"+
+						[a?"code="+encode(a):"",
+						b?"input="+encode(b):""].filter(function(x){return x}).join("&");
+	}
+
+	function encode(string) {
+		return btoa(unescape(encodeURIComponent(string))).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
+	}
+
+	function decode(string) {
+		return decodeURIComponent(escape(atob(unescape(string).replace(/-/g, "+").replace(/_/g, "/"))));
+	}
+
+	// end from tryitonline.net
 		var button  = document.getElementById("submit");
 		var button2 = document.getElementById("full");
 		var output  = document.getElementById("output");
