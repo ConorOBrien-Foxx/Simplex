@@ -1,0 +1,36 @@
+html {
+    font-family: "Gadugi", "Consolas", monospace;
+    font-size: 16px;
+}
+
+.mono, textarea, input {
+    font-family: "Consolas", monospace;
+    white-space: pre-wrap;
+}
+
+#container {
+    min-width: 500px;
+    width: 60%;
+}
+
+h1, h2 {
+    margin: 0;
+}
+
+#code {
+    resize: none;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+#wrap {
+    height: 4em;
+}
+
+#output, #wrap {
+    border: 1px solid grey;
+    border-radius: 5px;
+    min-height: 1.2em;
+    padding: 5px;
+}
