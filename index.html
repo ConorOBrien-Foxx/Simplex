@@ -4,14 +4,17 @@
 	<title>Simplex</title>
 	<meta charset="UTF-8">
 	<script src="http://cdnjs.cloudflare.com/ajax/libs/mathjs/2.7.0/math.min.js"></script>
-	<script src="https://rawgit.com/ConorOBrien-Foxx/Simplex/master/simplex.js"></script>
+	<script src="https://rawgit.com/mathiasbynens/utf8.js/master/utf8.js"></script>
+	<script src="simplex.js"></script>
 	<link rel="STYLESHEET" href="simplex.css">
 </head>
 <body>
 	<div id="container">
 		<h1>Simplex</h1>
-		<button onclick="save()">Permalink</button><button onclick="load()">Load</button>
+		<button onclick="save()">Permalink</button><button onclick="load()">Load</button><br>
+		<input id="upload" type="file"><button onclick="upload()">Submit file</button>
 		<h2>Code</h2>
+		<h3 id="bytes"></h3>
 		<div class="wrap"><textarea id="code"></textarea></div>
 		<button id="submit">Run</button>
 		<button id="full">Run with timeout</button>
@@ -21,34 +24,34 @@
 		<div id="output" class="mono"></div>
 	</div>
 	<script>
-	// from tryitonline.net
-	function load(){
-		if(location.hash){
-			var hash = location.hash.slice(1).split("&").map(function(r){
-				r=r.split("=");
-				if(r[0]=="code") document.getElementById("code").value = decode(r[1]);
-				if(r[0]=="input") document.getElementById("input").value = decode(r[1]);
-			});
+		// from tryitonline.net
+		function load(){
+			if(location.hash){
+				var hash = location.hash.slice(1).split("&").map(function(r){
+					r=r.split("=");
+					if(r[0]=="code") document.getElementById("code").value = decode(r[1]);
+					if(r[0]=="input") document.getElementById("input").value = decode(r[1]);
+				});
+			}
 		}
-	}
 
-	function save(){
-		var a = document.getElementById("code").value;
-		var b = document.getElementById("input").value;
-		location.hash = "#"+
-						[a?"code="+encode(a):"",
-						b?"input="+encode(b):""].filter(function(x){return x}).join("&");
-	}
+		function save(){
+			var a = document.getElementById("code").value;
+			var b = document.getElementById("input").value;
+			location.hash = "#"+
+							[a?"code="+encode(a):"",
+							b?"input="+encode(b):""].filter(function(x){return x}).join("&");
+		}
 
-	function encode(string) {
-		return btoa(unescape(encodeURIComponent(string))).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
-	}
+		function encode(string) {
+			return btoa(unescape(encodeURIComponent(string))).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
+		}
 
-	function decode(string) {
-		return decodeURIComponent(escape(atob(unescape(string).replace(/-/g, "+").replace(/_/g, "/"))));
-	}
+		function decode(string) {
+			return decodeURIComponent(escape(atob(unescape(string).replace(/-/g, "+").replace(/_/g, "/"))));
+		}
 
-	// end from tryitonline.net
+		// end from tryitonline.net
 		var button  = document.getElementById("submit");
 		var button2 = document.getElementById("full");
 		var output  = document.getElementById("output");
@@ -61,17 +64,24 @@
 			instance.run();
 		});
 		button2.addEventListener("click",function(){
-			// if(this.innerHTML == "Run with timeout"){
 			output.innerHTML = "";
-			this.innerHTML = "Stop";
 			instance = new Simplex(code.value);
 			instance.connect(output);
 			instance.full();
-			// } else {
-			// 	this.innerHTML = "Run with timeout";
-			// 	delete instance;
-			// }
 		});
+		function updateByteCount(){
+			var a = document.getElementById("code").value.length;
+			var b = utf8.encode(document.getElementById("code").value).length
+			document.getElementById("bytes").innerHTML = a+" CP-1252 bytes; "+b+" UTF-8 bytes";
+		}
+		updateByteCount();
+		function upload(){
+			var fr=new FileReader();
+			fr.onload=function(){document.getElementById("code").value=fr.result};
+			fr.readAsBinaryString(document.getElementById("upload").files[0]);
+			//console.log();
+			updateByteCount();
+		}
 	</script>
 </body>
 </html>
