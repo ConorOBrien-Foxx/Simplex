@@ -57,6 +57,9 @@
 		var output  = document.getElementById("output");
 		var code    = document.getElementById("code");
 		var instance;
+		code.addEventListener("change",updateByteCount);
+		code.addEventListener("keydown",updateByteCount);
+		code.addEventListener("keyup",updateByteCount);
 		button.addEventListener("click",function(){
 			output.innerHTML = "";
 			instance = new Simplex(code.value);
