@@ -6,7 +6,6 @@ function Slate(){
 }
 
 Slate.prototype.get = function(row,column){
-    console.log(row,column)
     while(row>=this.grid.length)
         this.grid.push([math.bignumber(0)]);
     while(column>=this.grid[row].length)
@@ -15,7 +14,6 @@ Slate.prototype.get = function(row,column){
 }
 
 Slate.prototype.set = function(value,row,column){
-    console.log(3)
     this.get(row,column);
     this.grid[row][column] = typeof value==="object"?value:math.eval(value);
 }
@@ -24,7 +22,9 @@ Slate.prototype.view = function(){
     return JSON.stringify(this.grid.map(function(x){return x.map(function(r){return +r.valueOf()})})).replace(/],/g,"],\n");
 }
 
-var test = new Slate();
+function parseBignumber(n){
+    return +n;
+}
 
 function Simplex(code,skin){
     this.slate = new Slate();
@@ -32,6 +32,7 @@ function Simplex(code,skin){
     this.cell = 0;
     this.index = 0;
     this.code = code;
+    this.mode = "DEFAULT";
     this.skin = skin || Simplex.skins.classic;
     this.inputFunc = alert;
     this.outputFunc = prompt;
@@ -62,7 +63,7 @@ Simplex.prototype.finish = function(){
 }
 
 Simplex.prototype.step = function(){
-    this.execCmd(this.code[this.index]);
+    this.skin.modes[this.mode](this);
     this.index++;
     console.log(this.slate.view());
 }
@@ -84,12 +85,33 @@ Simplex.prototype.full = function(){
     full(this);
 }
 
+Simplex.modes = {};
+Simplex.modes.DEFAULT = function(S){
+    S.execCmd(S.code[S.index]);
+}
+
 Simplex.skins = {};
 Simplex.skins.classic = {
     // header stuff
     "NAME": "classic",
     "init": function(S){
         S.outted = false;
+        S.code = S.code.replace(/\((.+?)\)(\d+)/g,function(a,b,c){
+            return b.repeat(+c||1);
+        });
+    },
+    "modes": {
+        "DEFAULT": Simplex.modes.DEFAULT,
+        "STRING": function(S){
+            do {
+                console.log(S.code[S.index]);
+                if(S.code[S.index]=="\\")S.index++;
+                else {
+                    S.slate.set(S.code[S.index].charCodeAt(),S.tape,S.cell++);
+                }
+            } while(S.code[++S.index]!="\""&&S.index<S.code.length);
+            S.mode = "DEFAULT";
+        }
     },
     "stepEnd": function(){},
     "codeEnd": function(S){
@@ -100,7 +122,23 @@ Simplex.skins.classic = {
         S.cell++;
     },
     "i": function(S){
-        S.slate.set(math.bignumber(+prompt()),S.tape,S.cell)
+        S.slate.set(math.bignumber(+S.inputFunc()),S.tape,S.cell)
+    },
+    "j": function(S){
+        S.slate.grid[S.tape] = S.slate.grid[S.tape].splice(S.cell,0,math.bignumber(0));
+    },
+    "X": function(S){
+        S.slate.set(math.randomInt(1+S.slate.get(S.tape,S.cell)),S.tape,S.cell);
+    },
+    "p": function(S){
+        S.slate.grid[S.tape].splice(S.cell,1);
+    },
+    "g": function(S){
+        S.slate.grid[S.tape].splice(0,S.slate.grid[S.tape].length).forEach(function(x){
+            S.outputFunc(String.fromCharCode(parseBignumber(x)));
+        });
+        S.slate.grid[S.tape] = [math.bignumber(0)];
+        S.outted = true;
     },
     "¦": function(S){
         if(!+S.slate.get(S.tape,S.cell)) S.index++;
@@ -126,10 +164,65 @@ Simplex.skins.classic = {
     },
     "o": function(S){
         S.outputFunc(S.slate.get(S.tape,S.cell));
-    }
+        S.outted = true;
+    },
+    "\"": function(S){
+        S.mode = "STRING";
+    },
+    "0": function(S){
+		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(0),S.tape,S.cell);
+	},
+	"1": function(S){
+		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(1),S.tape,S.cell);
+	},
+	"2": function(S){
+		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(2),S.tape,S.cell);
+	},
+	"3": function(S){
+		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(3),S.tape,S.cell);
+	},
+	"4": function(S){
+		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(4),S.tape,S.cell);
+	},
+	"5": function(S){
+		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(5),S.tape,S.cell);
+	},
+	"6": function(S){
+		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(6),S.tape,S.cell);
+	},
+	"7": function(S){
+		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(7),S.tape,S.cell);
+	},
+	"8": function(S){
+		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(8),S.tape,S.cell);
+	},
+	"9": function(S){
+		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(9),S.tape,S.cell);
+	},
 }
 Simplex.skins.BFDeriv = {
 
 }
 
 var s = new Simplex("IIIRIIoLo");
+
+/*function SimplexNumber(a,b,c){
+    this.re = a;
+    this.im = b;
+    this.base = c || 10;
+}
+
+/*
+ * SimplexNumber#parse
+ * Accepts a string as an argument in the form of
+ *     A +/- Bi [{C}]
+ * or, as a regex,
+ *     \w+\s*[+-]\w*i\s*({\d+})
+ * and returns an instance of SimplexNumber
+ * /
+SimplexNumber.parse = function(str){
+    var base = +str.indexOf("{")>=0?str.slice(str.indexOf("{")+1,str.length-1):10;
+    var real = parseInt(str.slice(0,str.indexOf("+")),base);
+    var imag = parseInt(str.slice(str.indexOf("+")+1,str.indexOf("i")),base);
+    return new SimplexNumber(real,imag,base);
+}*/
