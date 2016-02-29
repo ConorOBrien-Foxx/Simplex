@@ -34,8 +34,8 @@ function Simplex(code,skin){
     this.code = code;
     this.mode = "DEFAULT";
     this.skin = skin || Simplex.skins.classic;
-    this.inputFunc = alert;
-    this.outputFunc = prompt;
+    this.inputFunc = prompt;
+    this.outputFunc = alert;
     if(this.skin.init) this.skin.init(this);
 }
 
@@ -47,7 +47,7 @@ Simplex.prototype.connect = function(codeElement,inputElement){
     }
     if(typeof inputElement!=="undefined"&&inputElement){
         this.inputFunc = function(){
-            return iConnected.value;
+            return inputElement.value;
         }
     }
 }
@@ -58,14 +58,14 @@ Simplex.prototype.execCmd = function(command){
 }
 
 Simplex.prototype.finish = function(){
-    console.log("PROGRAM FINISHED EXECUTING.");
+    this.log("PROGRAM FINISHED EXECUTING.");
     if(this.skin.codeEnd) this.skin.codeEnd(this);
 }
 
 Simplex.prototype.step = function(){
     this.skin.modes[this.mode](this);
     this.index++;
-    console.log(this.slate.view());
+    this.log(this.slate.view());
 }
 
 Simplex.prototype.run = function(){
