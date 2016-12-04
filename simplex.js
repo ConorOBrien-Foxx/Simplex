@@ -58,14 +58,14 @@ Simplex.prototype.execCmd = function(command){
 }
 
 Simplex.prototype.finish = function(){
-    this.log("PROGRAM FINISHED EXECUTING.");
+    console.log("PROGRAM FINISHED EXECUTING.");
     if(this.skin.codeEnd) this.skin.codeEnd(this);
 }
 
 Simplex.prototype.step = function(){
     this.skin.modes[this.mode](this);
     this.index++;
-    this.log(this.slate.view());
+    console.log(this.slate.view());
 }
 
 Simplex.prototype.run = function(){
