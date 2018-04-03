@@ -53,12 +53,16 @@ class Slate {
     }
     
     pad(x, y) {
-        while(this.data.length < y) {
+        while(this.data.length <= y) {
             this.data.push([]);
         }
         
-        while(this.data[y].length < x) {
-            this.data[y].push(math.bignumber(0));
+        let maxSize = Math.max(x + 1, ...this.data.map(e => e.length));
+        
+        for(let row of this.data) {
+            while(row.length < maxSize) {
+                row.push(math.bignumber(0));
+            }
         }
     }
     
@@ -226,24 +230,28 @@ Simplex.operators = {
         if(this.fuel > 0) {
             this.x++;
         }
+        this.get();
         this.fuel--;
     },
     "<": function() {
         if(this.fuel > 0) {
             this.x--;
         }
+        this.get();
         this.fuel--;
     },
     "^": function() {
         if(this.fuel > 0) {
             this.y--;
         }
+        this.get();
         this.fuel--;
     },
     "v": function() {
         if(this.fuel > 0) {
             this.y++;
         }
+        this.get();
         this.fuel--;
     },
     "#": function() {
@@ -251,11 +259,16 @@ Simplex.operators = {
             this.x += this.delta[0];
             this.y += this.delta[1];
         }
+        this.get();
         this.fuel--;
     },
     // left turn, relative
     "~": function() {
-        
+        this.delta = math.multiply(this.delta, [[0, -1], [1, 0]]);
+    },
+    // right turn, relative
+    "`": function() {
+        this.delta = math.multiply(this.delta, [[0, 1], [-1, 0]]);
     },
     "$": function() {
         this.motions.reverse();
@@ -272,6 +285,10 @@ Simplex.operators = {
     "*": function(x, y) {
         return math.multiply(x, y);
     },
+    "c": function(x, y) {
+        return y;
+    },
+    
     
     "q": function(n) {
         return math.subtract(n, 1);
@@ -285,6 +302,7 @@ Simplex.operators = {
     "i": function() {
         this.set(Infinity);
     },
+    
     
     "[": function() {
         if(this.fuel <= 0 || Simplex.falsey(this.get())) {
