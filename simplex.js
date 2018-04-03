@@ -109,12 +109,16 @@ function* mapGenerator(gen, func) {
 
 Object.defineProperty(Token, "NUMBER", { value: Symbol("Token.NUMBER") });
 Object.defineProperty(Token, "OPERATOR", { value: Symbol("Token.OPERATOR") });
+Object.defineProperty(Token, "STRING", { value: Symbol("Token.STRING") });
 
 class Simplex {
     static tokenize(code) {
-        return code.match(/\d+|./g).map(e => {
+        return code.match(/".*"|\)?\d+|./g).map(e => {
             if(+e == e) {
                 return new Token(Token.NUMBER, e);
+            }
+            else if(e[0] == '"') {
+                return new Token(Token.STRING, e);
             }
             else {
                 return new Token(Token.OPERATOR, e);
@@ -254,6 +258,39 @@ Simplex.operators = {
         this.get();
         this.fuel--;
     },
+    
+    // motions
+    "c": function() {
+        this.motions[0] = Simplex.directions.center;
+    },
+    "r": function() {
+        this.motions[0] = Simplex.directions.right;
+    },
+    "l": function() {
+        this.motions[0] = Simplex.directions.left;
+    },
+    "u": function() {
+        this.motions[0] = Simplex.directions.up;
+    },
+    "d": function() {
+        this.motions[0] = Simplex.directions.down;
+    },
+    "C": function() {
+        this.motions[1] = Simplex.directions.center;
+    },
+    "R": function() {
+        this.motions[1] = Simplex.directions.right;
+    },
+    "L": function() {
+        this.motions[1] = Simplex.directions.left;
+    },
+    "U": function() {
+        this.motions[1] = Simplex.directions.up;
+    },
+    "D": function() {
+        this.motions[1] = Simplex.directions.down;
+    },
+    
     "#": function() {
         if(this.fuel > 0) {
             this.x += this.delta[0];
@@ -285,10 +322,23 @@ Simplex.operators = {
     "*": function(x, y) {
         return math.multiply(x, y);
     },
-    "c": function(x, y) {
+    ":": function(x, y) {
         return y;
     },
-    
+    "k": function() {
+        if(this.motions[0] === Simplex.directions.up) {
+            this.slate.data.shift();
+        }
+        else if(this.motions[0] === Simplex.directions.left) {
+            this.slate.data.forEach(row => row.shift());
+        }
+        else if(this.motions[0] === Simplex.directions.right) {
+            this.slate.data.forEach(row => row.pop());
+        }
+        else if(this.motions[0] === Simplex.directions.down) {
+            this.slate.data.pop();
+        }
+    },
     
     "q": function(n) {
         return math.subtract(n, 1);
