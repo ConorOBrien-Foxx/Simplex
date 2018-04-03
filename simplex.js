@@ -1,228 +1,309 @@
-math.config({number:"bignumber",precision:100});
+let isNode = typeof require !== "undefined";
 
-// "Memory Grid"
-function Slate(){
-    this.grid = [[math.bignumber(0)]];
+var math;
+
+if (isNode) {
+    math = require("mathjs");
 }
 
-Slate.prototype.get = function(row,column){
-    while(row>=this.grid.length)
-        this.grid.push([math.bignumber(0)]);
-    while(column>=this.grid[row].length)
-        this.grid[row].push(math.bignumber(0));
-    return this.grid[row][column];
-}
-
-Slate.prototype.set = function(value,row,column){
-    this.get(row,column);
-    this.grid[row][column] = typeof value==="object"?value:math.eval(value);
-}
-
-Slate.prototype.view = function(){
-    return JSON.stringify(this.grid.map(function(x){return x.map(function(r){return +r.valueOf()})})).replace(/],/g,"],\n");
-}
-
-function parseBignumber(n){
-    return +n;
-}
-
-function Simplex(code,skin){
-    this.slate = new Slate();
-    this.tape = 0;
-    this.cell = 0;
-    this.index = 0;
-    this.code = code;
-    this.mode = "DEFAULT";
-    this.skin = skin || Simplex.skins.classic;
-    this.inputFunc = prompt;
-    this.outputFunc = alert;
-    if(this.skin.init) this.skin.init(this);
-}
-
-Simplex.prototype.connect = function(codeElement,inputElement){
-    if(typeof codeElement!=="undefined"&&codeElement){
-        this.outputFunc = function(value){
-            codeElement.innerHTML += value;
-        }
-    }
-    if(typeof inputElement!=="undefined"&&inputElement){
-        this.inputFunc = function(){
-            return inputElement.value;
-        }
-    }
-}
-
-Simplex.prototype.execCmd = function(command){
-    if(this.skin[command]) return this.skin[command](this);
-    else return null;
-}
-
-Simplex.prototype.finish = function(){
-    console.log("PROGRAM FINISHED EXECUTING.");
-    if(this.skin.codeEnd) this.skin.codeEnd(this);
-}
-
-Simplex.prototype.step = function(){
-    this.skin.modes[this.mode](this);
-    this.index++;
-    console.log(this.slate.view());
-}
-
-Simplex.prototype.run = function(){
-    while(this.index<this.code.length){
-        this.step();
-    }
-    this.finish();
-}
-
-Simplex.prototype.full = function(){
-    function full(instance){
-        if(instance.index<=instance.code.length){
-            instance.step();
-            setTimeout(full,1,instance);
-        } else instance.finish();
-    }
-    full(this);
-}
-
-Simplex.modes = {};
-Simplex.modes.DEFAULT = function(S){
-    S.execCmd(S.code[S.index]);
-}
-
-Simplex.skins = {};
-Simplex.skins.classic = {
-    // header stuff
-    "NAME": "classic",
-    "init": function(S){
-        S.outted = false;
-        S.code = S.code.replace(/\((.+?)\)(\d+)/g,function(a,b,c){
-            return b.repeat(+c||1);
-        });
-    },
-    "modes": {
-        "DEFAULT": Simplex.modes.DEFAULT,
-        "STRING": function(S){
-            do {
-                console.log(S.code[S.index]);
-                if(S.code[S.index]=="\\")S.index++;
-                else {
-                    S.slate.set(S.code[S.index].charCodeAt(),S.tape,S.cell++);
-                }
-            } while(S.code[++S.index]!="\""&&S.index<S.code.length);
-            S.mode = "DEFAULT";
-        }
-    },
-    "stepEnd": function(){},
-    "codeEnd": function(S){
-        if(!S.outted) S.outputFunc(S.slate.get(S.tape,S.cell));
-    },
-    // functions
-    "R": function(S){
-        S.cell++;
-    },
-    "i": function(S){
-        S.slate.set(math.bignumber(+S.inputFunc()),S.tape,S.cell)
-    },
-    "j": function(S){
-        S.slate.grid[S.tape] = S.slate.grid[S.tape].splice(S.cell,0,math.bignumber(0));
-    },
-    "X": function(S){
-        S.slate.set(math.randomInt(1+S.slate.get(S.tape,S.cell)),S.tape,S.cell);
-    },
-    "p": function(S){
-        S.slate.grid[S.tape].splice(S.cell,1);
-    },
-    "g": function(S){
-        S.slate.grid[S.tape].splice(0,S.slate.grid[S.tape].length).forEach(function(x){
-            S.outputFunc(String.fromCharCode(parseBignumber(x)));
-        });
-        S.slate.grid[S.tape] = [math.bignumber(0)];
-        S.outted = true;
-    },
-    "¦": function(S){
-        if(!+S.slate.get(S.tape,S.cell)) S.index++;
-        else {
-            S.execCmd(S.code[++S.index]);
-            S.index -= 2;
-        }
-    },
-    "L": function(S){
-        S.cell--;
-    },
-    "U": function(S){
-        S.tape++;
-    },
-    "D": function(S){
-        S.tape--;
-    },
-    "I": function(S){
-        S.slate.set(math.add(S.slate.get(S.tape,S.cell),1),S.tape,S.cell);
-    },
-    "d": function(S){
-        S.slate.set(math.subtract(S.slate.get(S.tape,S.cell),1),S.tape,S.cell);
-    },
-    "o": function(S){
-        S.outputFunc(S.slate.get(S.tape,S.cell));
-        S.outted = true;
-    },
-    "\"": function(S){
-        S.mode = "STRING";
-    },
-    "0": function(S){
-		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(0),S.tape,S.cell);
-	},
-	"1": function(S){
-		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(1),S.tape,S.cell);
-	},
-	"2": function(S){
-		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(2),S.tape,S.cell);
-	},
-	"3": function(S){
-		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(3),S.tape,S.cell);
-	},
-	"4": function(S){
-		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(4),S.tape,S.cell);
-	},
-	"5": function(S){
-		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(5),S.tape,S.cell);
-	},
-	"6": function(S){
-		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(6),S.tape,S.cell);
-	},
-	"7": function(S){
-		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(7),S.tape,S.cell);
-	},
-	"8": function(S){
-		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(8),S.tape,S.cell);
-	},
-	"9": function(S){
-		S.slate.set(math.chain(S.slate.get(S.tape,S.cell)).multiply(10).add(9),S.tape,S.cell);
-	},
-}
-Simplex.skins.BFDeriv = {
-
-}
-
-var s = new Simplex("IIIRIIoLo");
-
-/*function SimplexNumber(a,b,c){
-    this.re = a;
-    this.im = b;
-    this.base = c || 10;
-}
+math.config({
+    number: "BigNumber",
+    precision: 100
+});
 
 /*
- * SimplexNumber#parse
- * Accepts a string as an argument in the form of
- *     A +/- Bi [{C}]
- * or, as a regex,
- *     \w+\s*[+-]\w*i\s*({\d+})
- * and returns an instance of SimplexNumber
- * /
-SimplexNumber.parse = function(str){
-    var base = +str.indexOf("{")>=0?str.slice(str.indexOf("{")+1,str.length-1):10;
-    var real = parseInt(str.slice(0,str.indexOf("+")),base);
-    var imag = parseInt(str.slice(str.indexOf("+")+1,str.indexOf("i")),base);
-    return new SimplexNumber(real,imag,base);
-}*/
+directions: ><v^
+motions:    udlrc UDLRC
+    uU - above
+    dD - below
+    lL - left
+    rR - right
+    cC - center
+    udlrc - first operand (default: c)
+    UDLRC - second operand (default: L)
+    $ - swap motions
+    
+    
+operators:
+[niladic]
+
+[monadic]
+
+
+
+[dyadic]
+
++   addition
+-   subtraction
+/   division
+*   multiplication
+%   modulus
+
+loops: [...]
+if:    {...}
+rep:   (...)N
+
+
+
+*/
+
+class Slate {
+    constructor() {
+        this.data = [[math.bignumber(0)]];
+    }
+    
+    pad(x, y) {
+        while(this.data.length < y) {
+            this.data.push([]);
+        }
+        
+        while(this.data[y].length < x) {
+            this.data[y].push(math.bignumber(0));
+        }
+    }
+    
+    get(x, y) {
+        this.pad(x, y);
+        
+        return this.data[y][x];
+    }
+    
+    set(x, y, v) {
+        this.pad(x, y);
+        
+        return this.data[y][x] = v;
+    }
+    
+    *[Symbol.iterator]() {
+        yield* this.data;
+    }
+}
+
+class Token {
+    constructor(type, raw) {
+        this.type = type;
+        this.raw = raw;
+    }
+}
+
+function* range(min, max=null) {
+    if(max === null) {
+        yield* range(0, min);
+    }
+    else {
+        for(let i = min; i < max; i++) {
+            yield i;
+        }
+    }
+}
+
+function* mapGenerator(gen, func) {
+    for(let el of gen) {
+        yield func(el);
+    }
+}
+
+Object.defineProperty(Token, "NUMBER", { value: Symbol("Token.NUMBER") });
+Object.defineProperty(Token, "OPERATOR", { value: Symbol("Token.OPERATOR") });
+
+class Simplex {
+    static tokenize(code) {
+        return code.match(/\d+|./g).map(e => {
+            if(+e == e) {
+                return new Token(Token.NUMBER, e);
+            }
+            else {
+                return new Token(Token.OPERATOR, e);
+            }
+        });
+    }
+    
+    static truthy(num) {
+        return !math.equal(num, 0);
+    }
+    
+    static falsey(num) {
+        return !Simplex.truthy(num);
+    }
+    
+    constructor(code) {
+        this.tokens = Simplex.tokenize(code);
+        this.loops = {};
+        
+        // handle loops
+        let loopStack = [];
+        for(let i = 0; i < this.tokens.length; i++) {
+            let token = this.tokens[i];
+            if(token.raw === "[" || token.raw === "{") {
+                loopStack.push(i);
+            }
+            else if(token.raw === "]" || token.raw === "}") {
+                let source = loopStack.pop();
+                this.loops[source] = i;
+                this.loops[i] = source;
+            }
+        }
+        
+        this.ip = 0;
+        this.x = 0;
+        this.y = 0;
+        this.fuel = Infinity;
+        this.slate = new Slate();
+        this.delta = Simplex.directions.right;
+        this.motions = [
+            Simplex.directions.center,
+            Simplex.directions.left,
+        ];
+    }
+    
+    getOperands(count) {
+        return [...range(count)].map(n => {
+            let motion = this.motions[n];
+            return this.get(...motion);
+        });
+    }
+    
+    set(v, dx=0, dy=0) {
+        return this.slate.set(this.x + dx, this.y + dy, v);
+    }
+    
+    get(dx=0, dy=0) {
+        return this.slate.get(this.x + dx, this.y + dy);
+    }
+    
+    step() {
+        let instruction = this.tokens[this.ip];
+        let type = instruction.type;
+        let raw = instruction.raw;
+        
+        if(type === Token.NUMBER) {
+            this.set(math.bignumber(raw));
+        }
+        else {
+            let op = Simplex.operators[raw];
+            if(op) {
+                let arity = op.length;
+                let operands = this.getOperands(arity);
+                let result = op.bind(this)(...operands);
+                if(arity && result !== undefined) {
+                    this.set(result);
+                }
+            }
+            else {
+                console.error("Undefined operator " + raw);
+            }
+        }
+        
+        this.ip++;
+    }
+    
+    run() {
+        while(this.ip < this.tokens.length) {
+            this.step();
+        }
+    }
+    
+    debug() {
+        for(let row of this.slate) {
+            let comp = "";
+            for(let cell of row) {
+                comp += math.round(cell, 15) + " ";
+            }
+            console.log(comp.trim());
+        }
+    }
+}
+
+Simplex.directions = {
+    left:   [-1, 0],
+    right:  [1, 0],
+    up:     [0, -1],
+    down:   [0, 1],
+    center: [0, 0],
+};
+Simplex.operators = {
+    ">": function() {
+        if(this.fuel > 0) {
+            this.x++;
+        }
+        this.fuel--;
+    },
+    "<": function() {
+        if(this.fuel > 0) {
+            this.x--;
+        }
+        this.fuel--;
+    },
+    "^": function() {
+        if(this.fuel > 0) {
+            this.y--;
+        }
+        this.fuel--;
+    },
+    "v": function() {
+        if(this.fuel > 0) {
+            this.y++;
+        }
+        this.fuel--;
+    },
+    "#": function() {
+        if(this.fuel > 0) {
+            this.x += this.delta[0];
+            this.y += this.delta[1];
+        }
+        this.fuel--;
+    },
+    // left turn, relative
+    "~": function() {
+        
+    },
+    "$": function() {
+        this.motions.reverse();
+    },
+    "/": function(x, y) {
+        return math.divide(x, y);
+    },
+    "+": function(x, y) {
+        return math.add(x, y);
+    },
+    "-": function(x, y) {
+        return math.subtract(x, y);
+    },
+    "*": function(x, y) {
+        return math.multiply(x, y);
+    },
+    
+    "q": function(n) {
+        return math.subtract(n, 1);
+    },
+    "p": function(n) {
+        return math.add(n, 1);
+    },
+    "_": function(n) {
+        return math.subtract(0, n);
+    },
+    "i": function() {
+        this.set(Infinity);
+    },
+    
+    "[": function() {
+        if(this.fuel <= 0 || Simplex.falsey(this.get())) {
+            this.ip = this.loops[this.ip];
+        }
+    },
+    "]": function() {
+        if(this.fuel > 0 && Simplex.truthy(this.get())) {
+            this.ip = this.loops[this.ip];
+        }
+    },
+    
+    "f": function(fuel) {
+        this.fuel = fuel;
+    },
+};
+
+let inst = new Simplex(process.argv[2]);
+
+inst.run();
+
+inst.debug();
