@@ -535,9 +535,10 @@ Simplex.operators = {
 if(isNode) {
     if(process.argv.length < 3) {
         console.error("Insufficient arguments.");
-        return;
     }
-    let inst = new Simplex(process.argv[2]);
-    inst.run();
+    else {
+        let inst = new Simplex(process.argv[2]);
+        inst.run();
+    }
     // inst.debug();
 }
