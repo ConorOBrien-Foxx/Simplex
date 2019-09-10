@@ -277,6 +277,30 @@ class Simplex {
             console.log(comp.trim());
         }
     }
+
+    output(str) {
+        str = str.toString();
+        if(this.DOMEnabled) {
+            this.outputElement.innerHTML += str;
+        }
+        else if(isNode) {
+            process.stdout.write(str);
+        }
+        else {
+            throw new Error("No output connected.");
+        }
+    }
+
+    // DOM functions
+    connect(element) {
+        if(element) {
+            this.DOMEnabled = true;
+            this.outputElement = element;
+        }
+        else {
+            throw new Error("Invalid/no element passed.");
+        }
+    }
 }
 
 Simplex.directions = {
@@ -440,6 +464,16 @@ Simplex.operators = {
         this.nextSlate();
     },
 
+    "G": function () {
+        this.debug();
+    },
+    "o": function () {
+        this.output(this.cellAt().toString());
+    },
+    "c": function () {
+        this.output(String.fromCharCode(this.cellAt().toString()));
+    },
+
     "q": function(n) {
         return math.subtract(n, 1);
     },
@@ -505,5 +539,5 @@ if(isNode) {
     }
     let inst = new Simplex(process.argv[2]);
     inst.run();
-    inst.debug();
+    // inst.debug();
 }
