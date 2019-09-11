@@ -36,6 +36,22 @@ const characterToCode = function (chr) {
     return CODE_PAGE.indexOf(chr);
 }
 
+const encodeText = function (text) {
+    let codes = [];
+    for(let ch of text) {
+        codes.push(characterToCode(ch));
+    }
+    return new Buffer(codes);
+}
+
+const decodeText = function (text) {
+    let str = "";
+    for(let ch of text) {
+        str += codeToCharacter(ch.charCodeAt());
+    }
+    return str;
+}
+
 const readFile = function (fileName, utf8 = true) {
     let buffer = fs.readFileSync(fileName);
     if(utf8) {
@@ -600,9 +616,19 @@ Simplex.operators = {
         .default("e", false)
         .boolean("e")
         .help("h")
-        .alias("h", "help");
-    
-    let fileName = argv.path || argv._[0];
+        .alias("h", "help")
+        .command("encode", "outputs the encoded bytes of the UTF8 input")
+        .command("decode", "outputs UTF8 given raw bytes");
+
+    let encodeInput = argv._[0] === "encode";
+    let decodeInput = argv._[0] === "decode";
+
+    let hasCommand = encodeInput || decodeInput;
+
+    let fileName = argv.path;
+    if(!fileName) {
+        fileName = argv._[hasCommand ? 1 : 0];
+    }
     let code;
     let usingUTF8 = !argv.encoded;
     if(fileName) {
@@ -613,6 +639,16 @@ Simplex.operators = {
             console.error("Expected a file name or program input. Try `-h` for help.");
             return;
         }
+    }
+
+    if(encodeInput) {
+        process.stdout.write(encodeText(code));
+        return;
+    }
+
+    if(decodeInput) {
+        process.stdout.write(decodeText(code));
+        return;
     }
 
     let inst = new Simplex(code);
