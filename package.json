@@ -1,0 +1,26 @@
+{
+  "name": "simplex",
+  "version": "1.0.0",
+  "description": "\"Slate\"-based language. (2D grid of cells, or a tape of tapes.)",
+  "main": "simplex.js",
+  "scripts": {
+    "test": "exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ConorOBrien-Foxx/Simplex.git"
+  },
+  "keywords": [
+    "esolang"
+  ],
+  "author": "Conor O'Brien",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ConorOBrien-Foxx/Simplex/issues"
+  },
+  "homepage": "https://github.com/ConorOBrien-Foxx/Simplex#readme",
+  "dependencies": {
+    "mathjs": "^6.2.1",
+    "yargs": "^14.0.0"
+  }
+}

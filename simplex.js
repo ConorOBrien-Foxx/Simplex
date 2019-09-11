@@ -1,9 +1,53 @@
 let isNode = typeof require !== "undefined";
 
-var math;
+var math, fs;
 
 if (isNode) {
-    math = require("mathjs");
+    mathJSInstance = require("mathjs");
+    math = mathJSInstance.create(mathJSInstance.all);
+    fs = require("fs");
+}
+
+const CODE_PAGE = [
+    "∞←↑→↓↔↕∆∏∑\n∫≈\r≤≥",
+    "♠♣♥♦₀₁₂₃₄₅₆₇₈₉Ω√",
+    ` !"#$%&'()*+,-./`,
+    "0123456789:;<=>?",
+    "@ABCDEFGHIJKLMNO",
+    "PQRSTUVWXYZ[\\]^_",
+    "`abcdefghijklmno",
+    "pqrstuvwxyz{|}~ȷ",
+    "€Ṣṣƒ„…†‡ɍ‰Š‹ŒɻŽʘ",
+    "Ḷ‘’“”•–≠₣™š›œṆžŸ",
+    "ḷ¡¢£¤¥¦§¨©ª«¬ṇ®ʚ",
+    "°±²³´µ¶·ə¹º»¼½¾¿",
+    "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏ",
+    "ÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß",
+    "àáâãäåæçèéêëìíîï",
+    "ðñòóôõö÷øùúûüýþÿ",
+].join("");
+
+const codeToCharacter = function (code) {
+    if(code < 0 || code > 255) return null;
+    return CODE_PAGE[code];
+}
+
+const characterToCode = function (chr) {
+    return CODE_PAGE.indexOf(chr);
+}
+
+const readFile = function (fileName, utf8 = true) {
+    let buffer = fs.readFileSync(fileName);
+    if(utf8) {
+        return buffer.toString();
+    }
+    else {
+        let result = "";
+        for(let byte of buffer) {
+            result += codeToCharacter(byte);
+        }
+        return result;
+    }
 }
 
 math.config({
@@ -470,7 +514,7 @@ Simplex.operators = {
     "o": function () {
         this.output(this.cellAt().toString());
     },
-    "c": function () {
+    "h": function () {
         this.output(String.fromCharCode(this.cellAt().toString()));
     },
 
@@ -483,10 +527,21 @@ Simplex.operators = {
     "_": function(n) {
         return math.subtract(0, n);
     },
-    "i": function() {
+    "N": function() {
         this.setCell(Infinity);
     },
 
+    // if
+    "{": function() {
+        let otherBraceLocation = this.loops[this.ip];
+        let otherBrace = this.tokens[otherBraceLocation];
+
+        if(Simplex.falsey(this.cellAt())) {
+            this.ip = otherBraceLocation + 1;
+        }
+    },
+
+    // repeat-N
     "(": function() {
         let otherBraceLocation = this.loops[this.ip];
         let otherBrace = this.tokens[otherBraceLocation];
@@ -515,6 +570,7 @@ Simplex.operators = {
         }
     },
 
+    // loop
     "[": function() {
         if(this.fuel <= 0 || Simplex.falsey(this.cellAt())) {
             this.ip = this.loops[this.ip];
@@ -532,13 +588,33 @@ Simplex.operators = {
     },
 };
 
-if(isNode) {
-    if(process.argv.length < 3) {
-        console.error("Insufficient arguments.");
+(function () {
+    if(!isNode) return;
+    let { argv } = require("yargs")
+        .usage("Usage: $0 file [-h] [-e]")
+        .option("c")
+        .string("c")
+        .alias("c", "code")
+        .option("e")
+        .alias("e", "encoded")
+        .default("e", false)
+        .boolean("e")
+        .help("h")
+        .alias("h", "help");
+    
+    let fileName = argv.path || argv._[0];
+    let code;
+    let usingUTF8 = !argv.encoded;
+    if(fileName) {
+        code = readFile(fileName, usingUTF8);
+    } else {
+        code = argv.code;
+        if(!code) {
+            console.error("Expected a file name or program input. Try `-h` for help.");
+            return;
+        }
     }
-    else {
-        let inst = new Simplex(process.argv[2]);
-        inst.run();
-    }
-    // inst.debug();
-}
+
+    let inst = new Simplex(code);
+    inst.run();
+})();
