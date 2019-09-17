@@ -190,7 +190,7 @@ function* mapGenerator(gen, func) {
     }
 }
 
-const TOKENIZE_REGEX = /".*"|\)?\d+|./g;
+const TOKENIZE_REGEX = /"(?:[^"]|.)*"|\)?\d+|./g;
 const NUMBER_REGEX = /^\d+$/;
 class Simplex {
     static tokenize(code) {
@@ -286,12 +286,35 @@ class Simplex {
         });
     }
 
+    moveDelta() {
+        this.x += this.delta[0];
+        this.y += this.delta[1];
+    }
+
     setCell(v, dx=0, dy=0) {
         return this.slate.setCell(this.x + dx, this.y + dy, v);
     }
 
     cellAt(dx=0, dy=0) {
         return this.slate.cellAt(this.x + dx, this.y + dy);
+    }
+
+    callOperator(raw) {
+        let opName = raw[0];
+        // [data] if defined, [] otherwise
+        let opData = [raw.slice(1)].filter(e => e);
+        let op = Simplex.operators[opName];
+        if(op) {
+            let arity = op.length;
+            let operands = this.followMotions(arity);
+            let result = op.bind(this)(...opData, ...operands);
+            if(arity && result !== undefined) {
+                this.setCell(result);
+            }
+        }
+        else {
+            console.error("Undefined operator " + raw);
+        }
     }
 
     step() {
@@ -301,22 +324,22 @@ class Simplex {
         if(type === Token.NUMBER) {
             this.setCell(math.bignumber(raw));
         }
+        else if(type === Token.STRING) {
+            let codes = raw.slice(1, -1)
+                           .replace(/""/, "\"")
+                           .split("")
+                           .map(ch => math.bignumber(ch.charCodeAt()))
+                           .reverse();
+            let tail = codes.pop();
+
+            for(let c of codes) {
+                this.setCell(c);
+                this.moveDelta();
+            }
+            this.setCell(tail);
+        }
         else {
-            let opName = raw[0];
-            // [data] if defined, [] otherwise
-            let opData = [raw.slice(1)].filter(e => e);
-            let op = Simplex.operators[opName];
-            if(op) {
-                let arity = op.length;
-                let operands = this.followMotions(arity);
-                let result = op.bind(this)(...opData, ...operands);
-                if(arity && result !== undefined) {
-                    this.setCell(result);
-                }
-            }
-            else {
-                console.error("Undefined operator " + raw);
-            }
+            this.callOperator(raw);
         }
 
         this.ip++;
@@ -439,8 +462,7 @@ Simplex.operators = {
     // move according to delta
     "#": function() {
         if(this.fuel > 0) {
-            this.x += this.delta[0];
-            this.y += this.delta[1];
+            this.moveDelta();
         }
         this.cellAt();
         this.fuel--;
@@ -527,11 +549,20 @@ Simplex.operators = {
     "G": function () {
         this.debug();
     },
-    "o": function () {
-        this.output(this.cellAt().toString());
+    "o": function (cell) {
+        this.output(cell.toString());
     },
-    "h": function () {
-        this.output(String.fromCharCode(this.cellAt().toString()));
+    "h": function (cell) {
+        this.output(String.fromCharCode(cell.toString()));
+    },
+    "H": function () {
+        this.delta = math.subtract(0, this.delta);
+        while(Simplex.truthy(this.cellAt())) {
+            this.callOperator("h");
+            this.moveDelta();
+        }
+        this.delta = math.subtract(0, this.delta);
+        console.log();
     },
 
     "q": function(n) {
