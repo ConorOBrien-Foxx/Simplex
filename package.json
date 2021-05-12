@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/ConorOBrien-Foxx/Simplex#readme",
   "dependencies": {
-    "mathjs": "^6.2.1",
+    "mathjs": "^7.5.1",
     "yargs": "^14.0.0"
   }
 }
